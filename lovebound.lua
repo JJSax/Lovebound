@@ -1,57 +1,57 @@
 local keys = {}
 keys.__index = keys
 
-keys.pressedKeys = {}
-keys.context = "default"
-
 function keys:newSystem()
-    return setmetatable({}, keys)
+    local system = {}
+    system.pressedKeys = {}
+    system.keybinds = {}
+    return setmetatable(system, keys)
 end
 
 function keys:newKeybind(info)
     assert(
         type(info) == "table",
         [[
-        Passed payload needs to be a table. i.e.
-        {
-            keys = {},
-            exclusive = false,
-            ordered = false,
-            context = "default"
-        }
-    ]]
+            Passed payload needs to be a table. i.e.
+            {
+                -- keys = {}, -- TODO support multi-key binds
+                -- exclusive = false,
+                -- ordered = false,
+                key = 'keyConstant',
+                onPress = function() end,
+                onRelease = function() end
+            }
+        ]]
     )
-    local default = {
-        keys = {},
-        exclusive = false,
-        ordered = false,
-        context = "default"
+
+    assert(type(info.key) == "string", "key must be a string")
+    -- TODO assert key is a valid keycode
+
+    local keybind = {
+        -- keys = {},
+        -- exclusive = false,
+        -- ordered = false,
+        onPress = function()
+        end,
+        onRelease = function()
+        end
     }
 
     for k, v in pairs(info) do
-        default[k] = v
+        keybind[k] = v
     end
 
+    table.insert(self.keybinds, keybind)
+
     -- require exclusive key hit aka no other buttons can be pushed.
-    -- press/release/both
+    -- press/release/both --> ok
     -- keyCombination, order specific
-    -- context
 end
 
--- context is what state
-function keys:addContext(context)
-end
-function keys:removeContext(context)
+function keys:keypressed(key)
+    self.pressedKeys[key] = true
 end
 
-function keys.keypressed(key)
-    keys.pressedKeys[key] = true
-end
-
-function keys.keyreleased(key)
-    keys.pressedKeys[key] = false
-end
-
-function keys.setContext(context)
-    keys.context = context
+function keys:keyreleased(key)
+    self.pressedKeys[key] = false
 end
