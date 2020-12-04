@@ -1,25 +1,65 @@
-local keys = {}
-keys.__index = keys
+local keysystem = {}
+keysystem.__index = keysystem
 
-function keys:newSystem()
+local keycombo = {}
+keycombo.__index = keycombo
+
+function keycombo.new(...)
+    -- Something like
+    -- keycombo.new({'lshift', 'rshift'}, {'lctrl', 'rctrl'})
+    -- as a sequence of alternative keys
+    local parts = {...}
+    local k = {parts = {}}
+    for _, p in ipairs(parts) do
+        if type(p) == "string" then
+            p = {p}
+        elseif type(p) ~= "table" then
+            error("Each combo part must be either a string or an array")
+        end
+        table.insert(k.parts, p)
+    end
+
+    return setmetatable(k, keycombo)
+end
+
+function keycombo:isActive(keystate)
+    -- Check if all buttons for this combo are pressed
+    for _, part in ipairs(self.parts) do
+        local partSatisfied = false
+        for _, alternative in ipairs(part) do
+            if keystate[alternative] then
+                partSatisfied = true
+                break
+            end
+        end
+
+        if not partSatisfied then
+            return false
+        end
+    end
+    return true
+end
+
+function keysystem:newSystem()
     local system = {}
     system.pressedKeys = {}
     system.keybinds = {}
-    return setmetatable(system, keys)
+    return setmetatable(system, keysystem)
 end
 
-function keys:newKeybind(info)
+function keysystem:newKeybind(info)
     assert(
         type(info) == "table",
         [[
             Passed payload needs to be a table. i.e.
             {
-                -- keys = {}, -- TODO support multi-key binds
+                -- keysystem = {}, -- TODO support multi-key binds
                 -- exclusive = false,
                 -- ordered = false,
                 key = 'keyConstant',
-                onPress = function() end,
-                onRelease = function() end
+                reqCombo = keycombo.new(),
+                onPress = function(ks, key) end,
+                onRelease = function(ks, key) end
             }
         ]]
     )
@@ -28,7 +68,7 @@ function keys:newKeybind(info)
     -- TODO assert key is a valid keycode
 
     local keybind = {
-        -- keys = {},
+        -- keysystem = {},
         -- exclusive = false,
         -- ordered = false,
         onPress = function()
@@ -48,10 +88,10 @@ function keys:newKeybind(info)
     -- keyCombination, order specific
 end
 
-function keys:keypressed(key)
+function keysystem:keypressed(key)
     self.pressedKeys[key] = true
 end
 
-function keys:keyreleased(key)
+function keysystem:keyreleased(key)
     self.pressedKeys[key] = false
 end
