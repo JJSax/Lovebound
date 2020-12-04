@@ -4,9 +4,10 @@ keysystem.__index = keysystem
 local keycombo = {}
 keycombo.__index = keycombo
 
-local function isKey(key)
-    local valid = pcall(love.keyboard.isDown, key)
-    return valid
+local function checkKey(key)
+    if not pcall(love.keyboard.isDown, key) then
+        error(("Not a valid key: %s"):format(key), 2)
+    end
 end
 
 function keycombo.new(...)
@@ -23,7 +24,7 @@ function keycombo.new(...)
         end
 
         for _, choice in ipairs(parts) do
-            assert(isKey(choice), ("Not a valid key: %s"):format(choice))
+            checkKey(choice)
         end
         table.insert(k.parts, p)
     end
@@ -74,7 +75,7 @@ function keysystem:newKeybind(info)
     )
 
     assert(type(info.key) == "string", "key must be a string")
-    -- TODO assert key is a valid keycode
+    checkKey(info.key)
 
     local keybind = {
         -- keysystem = {},
