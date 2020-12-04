@@ -4,6 +4,11 @@ keysystem.__index = keysystem
 local keycombo = {}
 keycombo.__index = keycombo
 
+local function isKey(key)
+    local valid = pcall(love.keyboard.isDown, key)
+    return valid
+end
+
 function keycombo.new(...)
     -- Something like
     -- keycombo.new({'lshift', 'rshift'}, {'lctrl', 'rctrl'})
@@ -15,6 +20,10 @@ function keycombo.new(...)
             p = {p}
         elseif type(p) ~= "table" then
             error("Each combo part must be either a string or an array")
+        end
+
+        for _, choice in ipairs(parts) do
+            assert(isKey(choice), ("Not a valid key: %s"):format(choice))
         end
         table.insert(k.parts, p)
     end
@@ -71,6 +80,7 @@ function keysystem:newKeybind(info)
         -- keysystem = {},
         -- exclusive = false,
         -- ordered = false,
+        reqCombo = keycombo.new(),
         onPress = function()
         end,
         onRelease = function()
