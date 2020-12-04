@@ -1,3 +1,5 @@
+local M = {}
+
 local keysystem = {}
 keysystem.__index = keysystem
 
@@ -116,3 +118,8 @@ function keysystem:keyreleased(key)
         end
     end
 end
+
+M.keysystem = keysystem
+M.keycombo = keycombo
+
+return M
