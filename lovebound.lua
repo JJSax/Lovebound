@@ -68,7 +68,7 @@ function keysystem:newKeybind(info)
                 -- ordered = false,
                 key = 'keyConstant',
                 reqCombo = keycombo.new(),
-                onPress = function(ks, key) end,
+                onPress = function() end,
                 onRelease = function(ks, key) end
             }
         ]]
@@ -101,8 +101,18 @@ end
 
 function keysystem:keypressed(key)
     self.pressedKeys[key] = true
+    for _, kb in ipairs(self.keybinds) do
+        if kb.key == key and kb.reqCombo:isActive(self.pressedKeys) then
+            kb.onPress()
+        end
+    end
 end
 
 function keysystem:keyreleased(key)
     self.pressedKeys[key] = false
+    for _, kb in ipairs(self.keybinds) do
+        if kb.key == key and kb.reqCombo:isActive(self.pressedKeys) then
+            kb.onRelease()
+        end
+    end
 end
