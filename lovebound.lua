@@ -1,3 +1,9 @@
+
+--[[
+	
+]]
+
+
 local M = {}
 
 local keysystem = {}
@@ -6,22 +12,23 @@ keysystem.__index = keysystem
 local keycombo = {}
 keycombo.__index = keycombo
 
-local function checkKey(key)
+local keybind = {}
+keybind.__index = keybind
+
+local function checkKey( key )
 
 	-- ensures passed key is a valid key constant
-	
+
 	if not pcall(love.keyboard.isDown, key) then
 		error(("Not a valid key: %s"):format(key), 3)
 	end
 end
 
-function keycombo.new(...)
+function keycombo.new( parts )
 
 	-- formats prerequisite keys and creates a combo grouping.
 	-- keycombo.new({'lshift', 'rshift'}, {'lctrl', 'rctrl'})
 	-- as a sequence of alternative keys
-
-	local parts = {...}
 
 	local k = {parts = {}}
 	for _, p in ipairs(parts) do
@@ -40,7 +47,7 @@ function keycombo.new(...)
 	return setmetatable(k, keycombo)
 end
 
-function keycombo:isActive(keystate)
+function keycombo:isActive( keystate )
 
 	-- Check if all buttons for this combo are pressed
 
@@ -70,7 +77,17 @@ function keysystem.newSystem()
 	return setmetatable(system, keysystem)
 end
 
-function keysystem:newKeybind(info)
+function keybind:isDown()
+	return love.keyboard.isDown( self.key ) and self.reqCombo:isActive(self.keysystem.pressedKeys)
+end
+
+function keybind:runIfHeld()
+	if self:isDown() then
+		self:onHold()
+	end
+end
+
+function keysystem:newKeybind( info )
 
 	-- This is where you set a new keybind.  Prerequisite keys will be a keycombo.new()
 
@@ -79,11 +96,11 @@ function keysystem:newKeybind(info)
 		[[
 			Passed payload needs to be a table. i.e.
 			{
-				-- keysystem = {}, -- TODO support multi-key binds
+				-- keysystem = {},
 				-- exclusive = false,
 				-- ordered = false,
 				key = 'keyConstant',
-				reqCombo = keycombo.new(),
+				reqCombo = {table of keys},
 				onPress = function() end,
 				onRelease = function(ks, key) end
 			}
@@ -93,26 +110,34 @@ function keysystem:newKeybind(info)
 	assert(type(info.key) == "string", "key must be a string")
 	checkKey(info.key)
 
-	local keybind = {
-		reqCombo = keycombo.new(),
+	local kb = {
+		reqCombo = {},
 		onPress = function()
 		end,
 		onRelease = function()
+		end,
+		onHold = function()
 		end
 	}
 
 	for k, v in pairs(info) do
-		keybind[k] = v
+		kb[k] = v
 	end
+	kb.reqCombo = keycombo.new( kb.reqCombo )
 
-	table.insert(self.keybinds, keybind)
+	local finished = setmetatable(kb, keybind)
+	finished.keysystem = self
+	table.insert(self.keybinds, finished)
+	return finished
+
+	-- table.insert(self.keybinds, kb)
 
 	-- require exclusive key hit aka no other buttons can be pushed.
 	-- press/release/both --> ok
 	-- keyCombination, order specific
 end
 
-function keysystem:keypressed(key)
+function keysystem:keypressed( key )
 
 	-- pass this when you are needing the keybinding to be active.
 	-- example.  If you need this while in a GUI, then while your are inside the GUI, call this function.
@@ -125,7 +150,7 @@ function keysystem:keypressed(key)
 	end
 end
 
-function keysystem:keyreleased(key)
+function keysystem:keyreleased( key )
 
 	-- pass this when you are needing the keybinding to be active.
 	-- example.  If you need this while in a GUI, then while your are inside the GUI, call this function.
@@ -138,7 +163,6 @@ function keysystem:keyreleased(key)
 	end
 end
 
-M.keysystem = keysystem
-M.keycombo = keycombo
+M.keysystem, M.keycombo = keysystem, keycombo
 
 return M
